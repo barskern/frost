@@ -1,3 +1,5 @@
+*.sqlite
+
 # Created by https://www.toptal.com/developers/gitignore/api/dotenv,python,jupyternotebooks
 # Edit at https://www.toptal.com/developers/gitignore?templates=dotenv,python,jupyternotebooks
 

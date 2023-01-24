@@ -9,6 +9,8 @@ import requests
 from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 
+logger = logging.getLogger("frost")
+
 try:
     import requests_cache
 
@@ -98,15 +100,15 @@ def main():
     PROMSCALE_CERT_PATH = os.getenv("PROMSCALE_CERT_PATH")
 
     if PROMSCALE_CERT_PATH:
-        logging.info(f"Using '{PROMSCALE_CERT_PATH}' as promscale certificate")
+        logger.info(f"Using '{PROMSCALE_CERT_PATH}' as promscale certificate")
     else:
-        logging.info("Will not verify certificate")
+        logger.info("Will not verify certificate")
 
     if len(sys.argv) >= 3:
         start_time = pendulum.parse(sys.argv[1])
         end_time = pendulum.parse(sys.argv[2])
     else:
-        logging.info("Did not get any timestamps, running from last metric (if exists) to now")
+        logger.info("Did not get any timestamps, running from last metric (if exists) to now")
 
         start_time = None
         end_time = pendulum.now(tz="UTC")
@@ -126,42 +128,42 @@ def main():
                 else get_last_timestamp_in_metric(metric_name) + pendulum.duration(0, 1)
             )
             if end_time < start_time_:
-                logging.warning(
+                logger.warning(
                     "Have a future (?) value in promscale, something is off.."
                 )
                 continue
 
-            logging.info(
+            logger.info(
                 f"Fetching '{element_id}' from '{BASE_URL}' from '{start_time_}' to '{end_time}'"
             )
             timeseries = get_observation_samples(
                 session, element_id, metric_name, start_time_, end_time
             )
-            logging.info(f"Got {len(timeseries['samples'])} '{element_id}' samples")
+            logger.info(f"Got {len(timeseries['samples'])} '{element_id}' samples")
 
-            logging.info(f"Sending samples to promscale")
+            logger.info(f"Sending samples to promscale")
             res = requests.post(
                 PROMSCALE_WRITE_URL,
                 json=timeseries,
                 verify=PROMSCALE_CERT_PATH if PROMSCALE_CERT_PATH else False,
             )
             if 200 <= res.status_code < 300:
-                logging.info(f"Successfully ingested '{element_id}' samples")
+                logger.info(f"Successfully ingested '{element_id}' samples")
             else:
-                logging.error(
+                logger.error(
                     f"Unable to ingest '{element_id}' samples, got '{res.status_code}'"
                 )
         except Exception as e:
             if 'No data found' in str(e):
-                logging.info(f"No new data for '{element_id}', continuing...")
+                logger.info(f"No new data for '{element_id}', continuing...")
                 continue
 
-            logging.error(f"Unable to fetch data for '{metric_name}': {e}")
+            logger.error(f"Unable to fetch data for '{metric_name}': {e}")
             error_count = error_count + 1
 
 
     if error_count > 0:
-        logging.error(f"Fetching data for '{error_count}' metrics failed")
+        logger.error(f"Fetching data for '{error_count}' metrics failed")
         exit(1)
 
 
