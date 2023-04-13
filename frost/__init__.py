@@ -76,17 +76,30 @@ def get_observation_samples(
     return timeseries
 
 
-def get_last_timestamp_in_metric(metric_name: str):
+
+def get_last_timestamp_in_metric(metric_name: str, lookback: str = "1d"):
     res = requests.get(
         PROMSCALE_QUERY_URL,
-        params={"query": f"max_over_time(timestamp({metric_name})[1d:])"},
+        params={"query": f"max_over_time(timestamp({metric_name})[{lookback}:])"},
         verify=PROMSCALE_CERT_PATH if PROMSCALE_CERT_PATH else False,
     )
     if not 200 <= res.status_code < 300:
         raise ValueError(f"Unable to get last timestamp of '{metric_name}': {res.text}")
 
-    query_result = res.json()
-    timestamp_s = query_result["data"]["result"][0]["value"][1]
+    query_response = res.json()
+    query_result = query_response["data"]["result"]
+    logger.debug(f"Query result from getting last timestamp: {query_result}")
+
+    try:
+        timestamp_s = query_result[0]["value"][1]
+    except IndexError as e:
+        if lookback != "30d":
+            return get_last_timestamp_in_metric(metric_name, "30d")
+
+        raise RuntimeError(
+            f"Query to get last metric timestamp returned nothing"
+        ) from e
+
     last_metric_timestamp = pendulum.from_timestamp(float(timestamp_s))
 
     return last_metric_timestamp
