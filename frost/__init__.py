@@ -24,12 +24,13 @@ PROMSCALE_WRITE_URL = "https://promscale.service.ruud.cloud/write"
 PROMSCALE_QUERY_URL = "https://promscale.service.ruud.cloud/api/v1/query"
 PROMSCALE_CERT_PATH = None
 
-KONGSBERG_SENSOR_ID = "SN28380"
+#DEFAULT_FROST_SENSOR_ID = "SN28380" # Kongsberg
+DEFAULT_FROST_SENSOR_ID = "SN19780" # Vollen
 
 
 def get_available_timeseries(session: requests.Session):
     url = BASE_URL + "/observations/availableTimeSeries/v0.jsonld"
-    return session.get(url, params={"sources": KONGSBERG_SENSOR_ID}).json()
+    return session.get(url, params={"sources": FROST_SENSOR_ID}).json()
 
 
 def get_observation_samples(
@@ -40,7 +41,7 @@ def get_observation_samples(
     to_time: Optional[DateTime] = None,
 ):
     params = {
-        "sources": KONGSBERG_SENSOR_ID,
+        "sources": FROST_SENSOR_ID,
         "referencetime": f"{from_time.to_iso8601_string()}/{to_time.to_iso8601_string()}"
         if from_time and to_time
         else "latest",
@@ -68,7 +69,7 @@ def get_observation_samples(
         "labels": {
             "__name__": metric_name,
             "location": "outside",
-            "sensor": KONGSBERG_SENSOR_ID,
+            "sensor": FROST_SENSOR_ID,
         },
         "samples": samples,
     }
@@ -96,9 +97,8 @@ def get_last_timestamp_in_metric(metric_name: str, lookback: str = "1d"):
         if lookback != "30d":
             return get_last_timestamp_in_metric(metric_name, "30d")
 
-        raise RuntimeError(
-            f"Query to get last metric timestamp returned nothing"
-        ) from e
+        logger.warning("Query to get last metric timestamp returned nothing, using start of month..")
+        return pendulum.now().start_of('month')
 
     last_metric_timestamp = pendulum.from_timestamp(float(timestamp_s))
 
@@ -111,6 +111,9 @@ def main():
 
     global PROMSCALE_CERT_PATH
     PROMSCALE_CERT_PATH = os.getenv("PROMSCALE_CERT_PATH")
+
+    global FROST_SENSOR_ID
+    FROST_SENSOR_ID = os.getenv("FROST_SENSOR_ID") or DEFAULT_FROST_SENSOR_ID
 
     if PROMSCALE_CERT_PATH:
         logger.info(f"Using '{PROMSCALE_CERT_PATH}' as promscale certificate")

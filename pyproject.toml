@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "frost"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Ole Martin Ruud <dev@barskern.no>"]
 license = "MIT"
@@ -8,17 +8,17 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-requests = "^2.28.2"
-python-dotenv = "^0.21.1"
-pendulum = "^2.1.2"
+requests = "^2.32.3"
+python-dotenv = "^1.0.1"
+pendulum = "^3.0.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^22.12.0"
-autopep8 = "^2.0.1"
-flake8 = "^6.0.0"
+black = "^24.10.0"
+autopep8 = "^2.3.1"
+flake8 = "^7.1.1"
 autoflake8 = "^0.4.0"
-pre-commit = "^2.21.0"
-requests-cache = "^0.9.8"
+pre-commit = "^4.0.1"
+requests-cache = "^1.2.1"
 
 [tool.poetry.scripts]
 frost_fetch = "frost:main"
